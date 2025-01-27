@@ -58,7 +58,21 @@ public class MemorySpace {
 	 * @return the base address of the allocated block, or -1 if unable to allocate
 	 */
 	public int malloc(int length) {		
-		//// Replace the following statement with your code
+		ListIterator finder = this.freeList.iterator();
+		for(int i=0;i<this.freeList.getSize();i++){
+			MemoryBlock potblock = finder.next();
+			if(potblock.length<length){
+				continue;
+			}
+			MemoryBlock block = new MemoryBlock(potblock.baseAddress,length);
+			this.allocatedList.addLast(block);
+			if(potblock.length==length) this.freeList.remove(potblock);
+			else{
+				potblock.length -= length;
+				potblock.baseAddress += length;
+			}
+			return block.baseAddress;
+		}
 		return -1;
 	}
 
@@ -70,9 +84,21 @@ public class MemorySpace {
 	 * @param baseAddress
 	 *            the starting address of the block to freeList
 	 */
-	public void free(int address) {
-		//// Write your code here
+	public void free(int address) { 
+		if(this.allocatedList.getSize()==0){
+			throw new IllegalArgumentException(
+					"index must be between 0 and size");
+		}
+		ListIterator finder = this.allocatedList.iterator();
+		for(int i=0;i<this.allocatedList.getSize();i++){
+			if(finder.current.block.baseAddress==address){
+				this.freeList.addLast(finder.current.block);
+				this.allocatedList.remove(finder.current.block);
+			}
+			finder.next();
+		}	
 	}
+	
 	
 	/**
 	 * A textual representation of the free list and the allocated list of this memory space, 
@@ -88,7 +114,26 @@ public class MemorySpace {
 	 * In this implementation Malloc does not call defrag.
 	 */
 	public void defrag() {
-		/// TODO: Implement defrag test
-		//// Write your code here
+		ListIterator finder = this.freeList.iterator();
+		while (finder.hasNext()) {
+			boolean defraged = false;
+			int checker = finder.current.block.baseAddress+finder.current.block.length;
+			ListIterator scouter = this.freeList.iterator();
+			scouter.next();
+			while(scouter.hasNext()){
+				if(checker==scouter.current.block.baseAddress){
+					MemoryBlock block = new MemoryBlock(finder.current.block.baseAddress, (scouter.current.block.length+finder.current.block.length));
+					int index = this.freeList.indexOf(finder.current.block);
+					this.freeList.remove(finder.current);
+					this.freeList.remove(scouter.current);
+					this.freeList.add(index, block);
+					finder = this.freeList.iterator();
+					defraged = true;
+					break;
+				}
+				scouter.next();
+			}
+			if(!defraged) finder.next();
+		}
 	}
 }
